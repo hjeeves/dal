@@ -78,103 +78,90 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.Date;
+//import java.util.Date;
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.log4j.Logger;
 
-public class TarWriter extends PackageWriter {
-    private static final Logger log = Logger.getLogger(TarWriter.class);
+public abstract class PackageWriter {
+    private static final Logger log = Logger.getLogger(PackageWriter.class);
 
-    public TarWriter(OutputStream ostream) {
-        TarArchiveOutputStream tmp =  new TarArchiveOutputStream(ostream);
-        tmp.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-        this.archiveOutput = tmp;
+    // Q: will a generaic ArchiveOutputStream work here? (think so)
+    protected ArchiveOutputStream archiveOutput;
+    
+    public PackageWriter() {
+        // instantiation of archiveOut done in child class
     }
 
-//    public void close() throws IOException {
-//        archiveOutput.finish();
-//        archiveOutput.close();
-//    }
+    /**
+     * Implement this so the correct type of entry is created for writing.
+     * @param pi - item to be written to tar file
+     * @param getRequest - HttpGet instance used to set up archive entry.
+     * @return
+     */
+    public abstract ArchiveEntry buildArchiveEntry(PackageItem pi, HttpGet getRequest);
+
+    public void close() throws IOException {
+        archiveOutput.finish();
+        archiveOutput.close();
+    }
 
     /**
      * Write the given packageItem to the ArchiveOutputStream local to this TarWriter instance.
      * @param packageItem - item to be written to tar file
      */
-//    public void write(PackageItem packageItem) throws IOException, InterruptedException,
-//        ResourceNotFoundException, TransientException, ResourceAlreadyExistsException {
+    public void write(PackageItem packageItem) throws IOException, InterruptedException,
+        ResourceNotFoundException, TransientException, ResourceAlreadyExistsException {
+
+        boolean openEntry = false;
+
+        try {
+            // HEAD to get entry metadata
+            URL packageURL = packageItem.getURL();
+            HttpGet get = new HttpGet(packageURL, true);
+
+            // write() will throw all errors so they can be
+            // handled by messaging in the PackageRunner.doIt() class
+            get.prepare();
+
+            // Put metadata for the archive entry to archive output stream
+            ArchiveEntry e = buildArchiveEntry(packageItem, get);
+            archiveOutput.putArchiveEntry(e);
+
+            // headers for entry have been written, body has not, so consider this entry 'open'
+            openEntry = true;
+
+            // Copy the get InputStream to the package OutputStream
+            // this puts the body of the entry to the archive output stream
+            InputStream getIOStream = get.getInputStream();
+            MultiBufferIO multiBufferIO = new MultiBufferIO();
+            multiBufferIO.copy(getIOStream, archiveOutput);
+
+        } finally {
+            if (openEntry) {
+                archiveOutput.closeArchiveEntry();
+            }
+        }
+    }
+
+
 //
-//        boolean openEntry = false;
-//
-//        try {
-//            // HEAD to get entry metadata
-//            URL packageURL = packageItem.getURL();
-//            HttpGet get = new HttpGet(packageURL, true);
-//
-//            // write() will throw all errors so they can be
-//            // handled by messaging in the PackageRunner.doIt() class
-//            get.prepare();
-//
-//            long contentLength = get.getContentLength();
-//            Date lastModified = get.getLastModified();
-//
-//            log.info(" content length: " + contentLength);
-//
-//            // create entry
-//            log.debug("tar entry: " + packageItem.getRelativePath() + "," + contentLength + "," + lastModified);
-//            ArchiveEntry e = new DynamicTarEntry(packageItem.getRelativePath(), contentLength, lastModified);
-//
-//            // the input stream needs to be written to the output stream that tout holds.
-//            // but the Apache Commons Compress library does whatever magic it does when the
-//            // file is written. And
-//            tout.putArchiveEntry(e);
-//
-//            // headers for entry have been written, body has not,
-//            // so consider this entry 'open'
-//            openEntry = true;
-//
-//            // Copy the get InputStream to the package OutputStream
-//            InputStream getIOStream = get.getInputStream();
-//            MultiBufferIO multiBufferIO = new MultiBufferIO();
-//            multiBufferIO.copy(getIOStream, tout);
-//
-//        } finally {
-//            if (openEntry) {
-//                tout.closeArchiveEntry();
+//    /**
+//     * Wrapper for TarArchiveEntry class that enforces that every entry is not a directory
+//     */
+//    private class DynamicTarEntry extends TarArchiveEntry {
+//        public DynamicTarEntry(String name, long size, Date lastModifiedDate) {
+//            super(name);
+//            log.info("TAR ENTRY VALUES:" + name + size);
+//            if (lastModifiedDate != null) {
+//                super.setModTime(lastModifiedDate);
 //            }
+//            super.setSize(size);
+//        }
+//
+//        @Override
+//        public boolean isDirectory() {
+//            return false;
 //        }
 //    }
-
-    @Override
-    public ArchiveEntry buildArchiveEntry(PackageItem pi, HttpGet getRequest) {
-        // Set up variables needed for Tar Archive Entry
-        long contentLength = getRequest.getContentLength();
-        Date lastModified = getRequest.getLastModified();
-
-        // create and return entry
-        log.debug("tar entry: " + pi.getRelativePath() + "," + contentLength + "," + lastModified);
-        DynamicTarEntry newEntry = new DynamicTarEntry(pi.getRelativePath(), contentLength, lastModified);
-        return newEntry;
-    }
-
-    /**
-     * Wrapper for TarArchiveEntry class that enforces that every entry is not a directory
-     */
-    private class DynamicTarEntry extends TarArchiveEntry {
-        public DynamicTarEntry(String name, long size, Date lastModifiedDate) {
-            super(name);
-            log.info("TAR ENTRY VALUES:" + name + size);
-            if (lastModifiedDate != null) {
-                super.setModTime(lastModifiedDate);
-            }
-            super.setSize(size);
-        }
-
-        @Override
-        public boolean isDirectory() {
-            return false;
-        }
-    }
-
 }

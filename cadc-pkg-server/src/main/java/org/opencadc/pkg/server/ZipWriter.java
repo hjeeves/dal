@@ -84,27 +84,26 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.log4j.Logger;
 
-public class TarWriter extends PackageWriter {
-    private static final Logger log = Logger.getLogger(TarWriter.class);
+public class ZipWriter {
+    private static final Logger log = Logger.getLogger(ZipWriter.class);
 
-    public TarWriter(OutputStream ostream) {
-        TarArchiveOutputStream tmp =  new TarArchiveOutputStream(ostream);
-        tmp.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-        this.archiveOutput = tmp;
+    
+    public ZipWriter(OutputStream ostream) {
+//        this.tout = new TarArchiveOutputStream(ostream);
     }
 
-//    public void close() throws IOException {
+    public void close() throws IOException {
 //        archiveOutput.finish();
-//        archiveOutput.close();
-//    }
+//        tout.close();
+    }
 
     /**
      * Write the given packageItem to the ArchiveOutputStream local to this TarWriter instance.
      * @param packageItem - item to be written to tar file
      */
-//    public void write(PackageItem packageItem) throws IOException, InterruptedException,
-//        ResourceNotFoundException, TransientException, ResourceAlreadyExistsException {
-//
+    public void write(PackageItem packageItem) throws IOException, InterruptedException,
+        ResourceNotFoundException, TransientException, ResourceAlreadyExistsException {
+
 //        boolean openEntry = false;
 //
 //        try {
@@ -144,18 +143,6 @@ public class TarWriter extends PackageWriter {
 //                tout.closeArchiveEntry();
 //            }
 //        }
-//    }
-
-    @Override
-    public ArchiveEntry buildArchiveEntry(PackageItem pi, HttpGet getRequest) {
-        // Set up variables needed for Tar Archive Entry
-        long contentLength = getRequest.getContentLength();
-        Date lastModified = getRequest.getLastModified();
-
-        // create and return entry
-        log.debug("tar entry: " + pi.getRelativePath() + "," + contentLength + "," + lastModified);
-        DynamicTarEntry newEntry = new DynamicTarEntry(pi.getRelativePath(), contentLength, lastModified);
-        return newEntry;
     }
 
     /**
@@ -176,5 +163,4 @@ public class TarWriter extends PackageWriter {
             return false;
         }
     }
-
 }
