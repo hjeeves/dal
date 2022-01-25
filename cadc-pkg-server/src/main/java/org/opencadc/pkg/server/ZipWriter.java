@@ -80,87 +80,44 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.util.Date;
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.log4j.Logger;
 
-public class ZipWriter {
+public class ZipWriter extends PackageWriter {
     private static final Logger log = Logger.getLogger(ZipWriter.class);
 
     
     public ZipWriter(OutputStream ostream) {
-//        this.tout = new TarArchiveOutputStream(ostream);
+        // Not clear whether anything else needs to be done to the stream yet...
+        ZipArchiveOutputStream tmp =  new ZipArchiveOutputStream(ostream);
+        this.archiveOutput = tmp;
     }
 
-    public void close() throws IOException {
-//        archiveOutput.finish();
-//        tout.close();
+
+    @Override
+    public ArchiveEntry buildArchiveEntry(PackageItem pi, HttpGet getRequest) {
+        ArchiveEntry newEntry = null;
+        return newEntry;
     }
+
+
+    // something similar to this needs to be made for zip entries. last modified and
+    // size for zip archive entries uses completely different functions than written below -
+    //
 
     /**
-     * Write the given packageItem to the ArchiveOutputStream local to this TarWriter instance.
-     * @param packageItem - item to be written to tar file
+     * Wrapper for ZipArchive class that enforces that every entry is not a directory
      */
-    public void write(PackageItem packageItem) throws IOException, InterruptedException,
-        ResourceNotFoundException, TransientException, ResourceAlreadyExistsException {
-
-//        boolean openEntry = false;
-//
-//        try {
-//            // HEAD to get entry metadata
-//            URL packageURL = packageItem.getURL();
-//            HttpGet get = new HttpGet(packageURL, true);
-//
-//            // write() will throw all errors so they can be
-//            // handled by messaging in the PackageRunner.doIt() class
-//            get.prepare();
-//
-//            long contentLength = get.getContentLength();
-//            Date lastModified = get.getLastModified();
-//
-//            log.info(" content length: " + contentLength);
-//
-//            // create entry
-//            log.debug("tar entry: " + packageItem.getRelativePath() + "," + contentLength + "," + lastModified);
-//            ArchiveEntry e = new DynamicTarEntry(packageItem.getRelativePath(), contentLength, lastModified);
-//
-//            // the input stream needs to be written to the output stream that tout holds.
-//            // but the Apache Commons Compress library does whatever magic it does when the
-//            // file is written. And
-//            tout.putArchiveEntry(e);
-//
-//            // headers for entry have been written, body has not,
-//            // so consider this entry 'open'
-//            openEntry = true;
-//
-//            // Copy the get InputStream to the package OutputStream
-//            InputStream getIOStream = get.getInputStream();
-//            MultiBufferIO multiBufferIO = new MultiBufferIO();
-//            multiBufferIO.copy(getIOStream, tout);
-//
-//        } finally {
-//            if (openEntry) {
-//                tout.closeArchiveEntry();
+//    private class DynamicZipEntry extends ZipArchiveEntry {
+//        public DynamicZipEntry(String name, long size, Date lastModifiedDate) {
+//            super(name);
+//            log.info("TAR ENTRY VALUES:" + name + size);
+//            if (lastModifiedDate != null) {
+//                super.setModTime(lastModifiedDate);
 //            }
+//            super.setSize(size);
 //        }
-    }
-
-    /**
-     * Wrapper for TarArchiveEntry class that enforces that every entry is not a directory
-     */
-    private class DynamicTarEntry extends TarArchiveEntry {
-        public DynamicTarEntry(String name, long size, Date lastModifiedDate) {
-            super(name);
-            log.info("TAR ENTRY VALUES:" + name + size);
-            if (lastModifiedDate != null) {
-                super.setModTime(lastModifiedDate);
-            }
-            super.setSize(size);
-        }
-
-        @Override
-        public boolean isDirectory() {
-            return false;
-        }
-    }
+//
+//    }
 }

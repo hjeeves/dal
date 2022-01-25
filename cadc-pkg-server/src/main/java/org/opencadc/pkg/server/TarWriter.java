@@ -158,6 +158,13 @@ public class TarWriter extends PackageWriter {
         return newEntry;
     }
 
+    // CADC-10473: it's not clear whether this class is appropriate for a normal tar file
+    // it was developed for caom2ops, which has a particular structure that has nothing to
+    // do with duplicating a normal file structure. :)  It's likely the 'isDirectory'
+    // override will cause problems with creating normal tar files, and that somehow this
+    // code will need to be pushed out into caom2-pkg-server in favour of something that only
+    // allows the mod time and size to be set.
+
     /**
      * Wrapper for TarArchiveEntry class that enforces that every entry is not a directory
      */

@@ -192,7 +192,7 @@ public abstract class PackageRunner implements JobRunner {
                 throw new IllegalArgumentException("package name not defined.");
             }
             // TODO: CADC-10642: this needs to be able to instantiate either TarWriter
-            // or ZipWriter, depending on which is requested. 
+            // or ZipWriter, depending on which is requested.
             writer = new TarWriter(this.outputStreamCounter);
 
             while (packageItems.hasNext()) {
